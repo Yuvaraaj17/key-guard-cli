@@ -133,7 +133,6 @@ list - Lists all the acounts that has been added
 `
 
 func main() {
-	fmt.Println(os.Args)
 	argument := strings.ToLower(os.Args[1])
 	switch argument {
 	case "help":
