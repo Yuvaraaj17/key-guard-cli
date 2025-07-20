@@ -1,0 +1,12 @@
+name: Hello World
+
+on:
+  push:             # Runs every time you push
+
+jobs:
+  say-hello:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print hello
+        run: echo "👋 Hello, world!"
