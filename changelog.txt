@@ -1,0 +1,13 @@
+##### Change Log For versions 990c2b202067a9394382eba2a65829a91a2415f6 --- f663c2f6d83e498941fb45a27d701284acb4ed8d #####
+## Features
+- Updated release job conditions
+- Updated file name to be usable in go install
+
+## Other
+- build and release workflow
+- simple workflow
+
+## Cleanup
+- Removed exe as latest can be fectched from artifact
+- Removed args log statement
+

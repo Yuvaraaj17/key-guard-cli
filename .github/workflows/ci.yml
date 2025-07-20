@@ -3,6 +3,9 @@ name: CI Pipeline
 on:
   push:             # Runs every time you push
 
+env:
+  FROM_VERSION: "v1.0.0"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,3 +47,27 @@ jobs:
           files: ./bin/key-guard-cli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+  generate-changelog:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Install changeloggen
+        run: |
+          go install github.com/Yuvaraaj17/changeloggen@latest
+          echo "TO_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          changeloggen -f ${{ env.FROM_VERSION }} -t $TO_VERSION
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog.txt
+          path: ./changelog.txt
+
+
+
+
