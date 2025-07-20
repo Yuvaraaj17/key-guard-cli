@@ -56,6 +56,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
+      - name: Checking out the branch
+        uses: actions/checkout@v4
+      - name: Print current branch (git)
+        run: |
+          echo "Current branch"
+          git branch --show-current
       - name: Install changeloggen
         run: |
           go install github.com/Yuvaraaj17/changeloggen@latest
