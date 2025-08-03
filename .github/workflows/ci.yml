@@ -6,6 +6,9 @@ on:
 env:
   FROM_VERSION: "v1.0.0"
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -72,8 +75,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ./bin/key-guard-cli
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
 
 
