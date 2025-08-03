@@ -14,6 +14,7 @@ import (
 	"github.com/atotto/clipboard"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/argon2"
+	"golang.org/x/term"
 )
 
 // key must be 16, 24, or 32 bytes (AES-128, AES-192, AES-256)
@@ -133,6 +134,10 @@ list - Lists all the acounts that has been added
 `
 
 func main() {
+	if len(os.Args) == 1 {
+		fmt.Println(helpMsg)
+		return
+	}
 	argument := strings.ToLower(os.Args[1])
 	switch argument {
 	case "help":
@@ -159,7 +164,6 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		var passwd string
 		row := db.QueryRow(`SELECT COUNT(*) FROM users`)
 
 		var count int
@@ -170,8 +174,8 @@ func main() {
 		}
 
 		fmt.Println("Enter master password")
-		fmt.Scanln(&passwd)
-		hashed_passwd, _ := hashPassword(passwd)
+		passwd, _ := term.ReadPassword(int(os.Stdin.Fd()))
+		hashed_passwd, _ := hashPassword(string(passwd))
 		stmt, _ := db.Prepare("INSERT INTO users (hashed_passwd) VALUES ( ?)")
 		_, _ = stmt.Exec(hashed_passwd)
 		fmt.Println("✅ Account added.")
@@ -201,22 +205,22 @@ func main() {
 				fmt.Println("⚠️ This account already exists. Do you want to overwrite the credentials [y/n]")
 				fmt.Scanln(&opt)
 				if strings.ToLower(opt) == "y" {
-					var oldHash, masterpwd string
+					var oldHash string
 					fmt.Println("Enter Master Password")
-					fmt.Scanln(&masterpwd)
+					masterpwd, _ := term.ReadPassword(int(os.Stdin.Fd()))
 					stmt := db.QueryRow(`SELECT hashed_passwd from users`)
 					stmt.Scan(&oldHash)
-					if !verifyPassword(oldHash, masterpwd) {
+					if !verifyPassword(oldHash, string(masterpwd)) {
 						fmt.Println("Master Password does not match")
 					}
-					var username, password string
+					var username string
 					fmt.Println("Enter username")
 					fmt.Scanln(&username)
 					fmt.Println("Enter password")
-					fmt.Scanln(&password)
+					password, _ := term.ReadPassword(int(os.Stdin.Fd()))
 					row_update, _ := db.Prepare(`UPDATE accounts SET username = ?, password = ? WHERE account = ?`)
 
-					encryptedpwd, err := aesencrypt(password, []byte(oldHash)[:16])
+					encryptedpwd, err := aesencrypt(string(password), []byte(oldHash)[:16])
 					if err != nil {
 						fmt.Println("❌ Encryption failed:", err)
 						return
@@ -227,22 +231,22 @@ func main() {
 				return
 			}
 
-			var oldHash, masterpwd string
+			var oldHash string
 			fmt.Println("Enter Master Password")
-			fmt.Scanln(&masterpwd)
+			masterpwd, _ := term.ReadPassword(int(os.Stdin.Fd()))
 			stmt := db.QueryRow(`SELECT hashed_passwd from users`)
 			stmt.Scan(&oldHash)
-			if !verifyPassword(oldHash, masterpwd) {
+			if !verifyPassword(oldHash, string(masterpwd)) {
 				fmt.Println("Master Password does not match")
 				return
 			}
-			var username, password string
+			var username string
 			fmt.Println("Enter username")
 			fmt.Scanln(&username)
 			fmt.Println("Enter password")
-			fmt.Scanln(&password)
+			password, _ := term.ReadPassword(int(os.Stdin.Fd()))
 			row_insert, _ := db.Prepare(`INSERT INTO accounts (account, username, password) VALUES (?, ?, ?)`)
-			encryptedpwd, _ := aesencrypt(password, []byte(oldHash)[:16])
+			encryptedpwd, _ := aesencrypt(string(password), []byte(oldHash)[:16])
 			row_insert.Exec(os.Args[2], username, encryptedpwd)
 			fmt.Println("Credentials Added")
 			return
@@ -276,12 +280,12 @@ func main() {
 				return
 			}
 			defer db.Close()
-			var oldHash, masterpwd string
+			var oldHash string
 			fmt.Println("Enter Master Password")
-			fmt.Scanln(&masterpwd)
+			masterpwd, _ := term.ReadPassword(int(os.Stdin.Fd()))
 			stmt := db.QueryRow(`SELECT hashed_passwd from users`)
 			stmt.Scan(&oldHash)
-			res := verifyPassword(oldHash, masterpwd)
+			res := verifyPassword(oldHash, string(masterpwd))
 			if !res {
 				fmt.Println("Master Password does not match")
 				return
@@ -301,12 +305,12 @@ func main() {
 				return
 			}
 			defer db.Close()
-			var oldHash, masterpwd string
+			var oldHash string
 			fmt.Println("Enter Master Password")
-			fmt.Scanln(&masterpwd)
+			masterpwd, _ := term.ReadPassword(int(os.Stdin.Fd()))
 			stmt := db.QueryRow(`SELECT hashed_passwd from users`)
 			stmt.Scan(&oldHash)
-			res := verifyPassword(oldHash, masterpwd)
+			res := verifyPassword(oldHash, string(masterpwd))
 			if !res {
 				fmt.Println("Master Password does not match")
 				return
@@ -327,7 +331,7 @@ func main() {
 				fmt.Println(errstr)
 				break
 			}
-			clipboardText := fmt.Sprintf(`%s\n\n%s`,username,passwdtext)
+			clipboardText := fmt.Sprintf(`%s\r\n\r\n%s`,username,passwdtext)
 			err = clipboard.WriteAll(clipboardText)
 			if err != nil {
 				fmt.Println("Error copying to clipboard:", err)
@@ -355,5 +359,7 @@ func main() {
 			fmt.Println("Master Password does not match")
 			return
 		}
+	default:
+		fmt.Println("Invalid arguments provided Check help for more info")
 	}
 }
